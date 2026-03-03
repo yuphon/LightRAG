@@ -1,0 +1,58 @@
+# Docker Compose for LightRAG with PostgreSQL
+#
+# This configuration deploys postgres-for-rag container which includes:
+# - PostgreSQL with pgvector extension (for vector storage)
+# - Apache AGE extension (for graph storage)
+# - Suitable for all LightRAG storage backends (KV, Vector, Graph, DocStatus)
+#
+# Default credentials: username=rag, password=rag
+# Docker Hub: https://hub.docker.com/r/gzdaniel/postgres-for-rag
+#
+# Usage:
+#   1. Copy this file to your project root
+#   2. Run: docker-compose -f docs/learn/docker-compose-postgres.yml up -d
+#   3. Configure your .env file with:
+#      POSTGRES_HOST=localhost
+#      POSTGRES_PORT=5432
+#      POSTGRES_USER=rag
+#      POSTGRES_PASSWORD=rag
+#      POSTGRES_DATABASE=rag_db
+#      LIGHTRAG_KV_STORAGE=PGKVStorage
+#      LIGHTRAG_VECTOR_STORAGE=PGVectorStorage
+#      LIGHTRAG_GRAPH_STORAGE=PGGraphStorage
+#      LIGHTRAG_DOC_STATUS_STORAGE=PGDocStatusStorage
+
+services:
+  postgres:
+    image: gzdaniel/postgres-for-rag:16.6
+    container_name: lightrag-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER=hlyai
+      POSTGRES_PASSWORD=hlyai123
+      POSTGRES_DATABASE=rag_db
+    # IMPORTANT: This image requires manual PostgreSQL service start
+    command: sh -c "service postgresql start && sleep infinity"
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persist PostgreSQL data
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # Optional: Add network configuration if needed
+    # networks:
+    #   - lightrag-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+# Optional: Define a custom network
+# networks:
+#   lightrag-network:
+#     driver: bridge
